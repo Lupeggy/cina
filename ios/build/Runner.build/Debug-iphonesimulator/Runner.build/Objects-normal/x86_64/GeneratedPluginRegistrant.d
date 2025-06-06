@@ -1,0 +1,21 @@
+dependencies: \
+  /Users/peggy/Myapp/cina/ios/Runner/GeneratedPluginRegistrant.m \
+  /Users/peggy/Myapp/cina/ios/Runner/GeneratedPluginRegistrant.h \
+  /Users/peggy/Myapp/cina/ios/build/Debug-iphonesimulator/Flutter.framework/Modules/module.modulemap \
+  /Users/peggy/Myapp/cina/ios/build/Debug-iphonesimulator/Flutter.framework/Headers/Flutter.h \
+  /Users/peggy/Myapp/cina/ios/build/Debug-iphonesimulator/Flutter.framework/Headers/FlutterAppDelegate.h \
+  /Users/peggy/Myapp/cina/ios/build/Debug-iphonesimulator/Flutter.framework/Headers/FlutterMacros.h \
+  /Users/peggy/Myapp/cina/ios/build/Debug-iphonesimulator/Flutter.framework/Headers/FlutterPlugin.h \
+  /Users/peggy/Myapp/cina/ios/build/Debug-iphonesimulator/Flutter.framework/Headers/FlutterBinaryMessenger.h \
+  /Users/peggy/Myapp/cina/ios/build/Debug-iphonesimulator/Flutter.framework/Headers/FlutterChannels.h \
+  /Users/peggy/Myapp/cina/ios/build/Debug-iphonesimulator/Flutter.framework/Headers/FlutterCodecs.h \
+  /Users/peggy/Myapp/cina/ios/build/Debug-iphonesimulator/Flutter.framework/Headers/FlutterPlatformViews.h \
+  /Users/peggy/Myapp/cina/ios/build/Debug-iphonesimulator/Flutter.framework/Headers/FlutterTexture.h \
+  /Users/peggy/Myapp/cina/ios/build/Debug-iphonesimulator/Flutter.framework/Headers/FlutterCallbackCache.h \
+  /Users/peggy/Myapp/cina/ios/build/Debug-iphonesimulator/Flutter.framework/Headers/FlutterDartProject.h \
+  /Users/peggy/Myapp/cina/ios/build/Debug-iphonesimulator/Flutter.framework/Headers/FlutterEngine.h \
+  /Users/peggy/Myapp/cina/ios/build/Debug-iphonesimulator/Flutter.framework/Headers/FlutterEngineGroup.h \
+  /Users/peggy/Myapp/cina/ios/build/Debug-iphonesimulator/Flutter.framework/Headers/FlutterHeadlessDartRunner.h \
+  /Users/peggy/Myapp/cina/ios/build/Debug-iphonesimulator/Flutter.framework/Headers/FlutterPluginAppLifeCycleDelegate.h \
+  /Users/peggy/Myapp/cina/ios/build/Debug-iphonesimulator/Flutter.framework/Headers/FlutterViewController.h \
+  /Users/peggy/Myapp/cina/ios/build/Debug-iphonesimulator/Flutter.framework/Headers/FlutterHourFormat.h
