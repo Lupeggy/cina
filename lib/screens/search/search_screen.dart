@@ -40,31 +40,58 @@ class SearchScreen extends StatelessWidget {
           bottom: PreferredSize(
             preferredSize: const Size.fromHeight(kToolbarHeight),
             child: Container(
-              alignment: Alignment.center,
+              width: double.infinity,
               decoration: BoxDecoration(
                 gradient: AppColors.primaryGradient,
               ),
-              child: TabBar(
-                labelColor: Colors.white,
-                unselectedLabelColor: Colors.white.withOpacity(0.7),
-                indicatorColor: Colors.white,
-                indicatorWeight: 3.0,
-                isScrollable: true,
-                labelPadding: const EdgeInsets.symmetric(horizontal: 20.0),
-                indicatorSize: TabBarIndicatorSize.label,
-                tabs: const [
-                  Tab(text: 'AI Chat'),
-                  Tab(text: 'Scenes'),
-                  Tab(text: 'Travel Diary'),
-                  Tab(text: 'Posts'),
-                ],
-                labelStyle: const TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w600,
-                ),
-                unselectedLabelStyle: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.normal,
+              child: Center(
+                child: Container(
+                  constraints: const BoxConstraints(maxWidth: 600),
+                  child: TabBar(
+                    labelColor: Colors.white,
+                    unselectedLabelColor: Colors.white.withOpacity(0.7),
+                    indicatorColor: Colors.white,
+                    indicatorWeight: 3.0,
+                    isScrollable: false,
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    indicatorSize: TabBarIndicatorSize.label,
+                    tabs: const [
+                      Tab(
+                        child: Padding(
+                          padding: EdgeInsets.symmetric(horizontal: 4),
+                          child: Text('AI Chat', textAlign: TextAlign.center),
+                        ),
+                      ),
+                      Tab(
+                        child: Padding(
+                          padding: EdgeInsets.symmetric(horizontal: 4),
+                          child: Text('Scenes', textAlign: TextAlign.center),
+                        ),
+                      ),
+                      Tab(
+                        child: Padding(
+                          padding: EdgeInsets.symmetric(horizontal: 4),
+                          child: Text('Travel Diary', textAlign: TextAlign.center),
+                        ),
+                      ),
+                      Tab(
+                        child: Padding(
+                          padding: EdgeInsets.symmetric(horizontal: 4),
+                          child: Text('Posts', textAlign: TextAlign.center),
+                        ),
+                      ),
+                    ],
+                    labelStyle: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      height: 1.2,
+                    ),
+                    unselectedLabelStyle: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.normal,
+                      height: 1.2,
+                    ),
+                  ),
                 ),
               ),
             ),

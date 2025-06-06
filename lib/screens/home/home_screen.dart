@@ -6,6 +6,7 @@ import '../../core/constants/app_typography.dart';
 import '../search/search_screen.dart';
 import '../post/post_screen.dart';
 import '../profile/profile_screen.dart';
+import '../trip/trip_screen.dart';
 
 // Content filter enum
 enum ContentFilter {
@@ -892,6 +893,8 @@ class _HomeScreenState extends State<HomeScreen> {
           const SearchScreen(),
           // Post Screen
           const PostScreen(),
+          // Trip Screen
+          const TripScreen(),
           // Profile Screen
           const ProfileScreen(),
         ],
@@ -913,6 +916,11 @@ class _HomeScreenState extends State<HomeScreen> {
             icon: Icon(Icons.add_box_outlined),
             activeIcon: Icon(Icons.add_box),
             label: 'Post',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.card_travel_outlined),
+            activeIcon: Icon(Icons.card_travel),
+            label: 'Trips',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.person_outline),
