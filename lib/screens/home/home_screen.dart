@@ -4,9 +4,9 @@ import '../../config/theme.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_typography.dart';
 import '../search/search_screen.dart';
-import '../post/post_screen.dart';
 import '../profile/profile_screen.dart';
 import '../trip/trip_screen.dart';
+import '../map/map_screen.dart';
 
 // Content filter enum
 enum ContentFilter {
@@ -800,8 +800,8 @@ class _HomeScreenState extends State<HomeScreen> {
   void _onItemTapped(int index) {
     setState(() {
       _selectedIndex = index;
+      _pageController.jumpToPage(index);
     });
-    _pageController.jumpToPage(index);
   }
 
 
@@ -834,6 +834,16 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                   centerTitle: false,
                   actions: [
+                    IconButton(
+                      icon: const Icon(Icons.map_outlined, color: Colors.black87, size: 24),
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => const MapScreen()),
+                        );
+                      },
+                    ),
+                    const SizedBox(width: 4),
                     IconButton(
                       icon: const Icon(Icons.notifications_outlined, color: Colors.black87, size: 24),
                       onPressed: () {},
@@ -891,8 +901,8 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           // Search Screen
           const SearchScreen(),
-          // Post Screen
-          const PostScreen(),
+          // Map Screen
+          const MapScreen(),
           // Trip Screen
           const TripScreen(),
           // Profile Screen
@@ -913,9 +923,9 @@ class _HomeScreenState extends State<HomeScreen> {
             label: 'Search',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.add_box_outlined),
-            activeIcon: Icon(Icons.add_box),
-            label: 'Post',
+            icon: Icon(Icons.map_outlined),
+            activeIcon: Icon(Icons.map),
+            label: 'Map',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.card_travel_outlined),

@@ -6,6 +6,7 @@ import 'screens/post/post_screen.dart';
 import 'screens/profile/profile_screen.dart';
 import 'screens/search/search_screen.dart';
 import 'screens/trip/trip_screen.dart';
+import 'screens/map/map_screen.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -30,6 +31,7 @@ class MyApp extends StatelessWidget {
         '/search': (context) => const SearchScreen(),
         '/post': (context) => const PostScreen(),
         '/trip': (context) => const TripScreen(),
+        '/map': (context) => const MapScreen(),
         '/profile': (context) => const ProfileScreen(),
       },
     );
