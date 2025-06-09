@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'core/theme/app_theme.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/home/home_screen.dart';
-import 'screens/post/post_screen.dart';
+// import 'screens/post/post_screen.dart';
 import 'screens/profile/profile_screen.dart';
 import 'screens/search/search_screen.dart';
 import 'screens/trip/trip_screen.dart';
@@ -29,7 +29,7 @@ class MyApp extends StatelessWidget {
         '/login': (context) => const LoginScreen(),
         '/home': (context) => const HomeScreen(),
         '/search': (context) => const SearchScreen(),
-        '/post': (context) => const PostScreen(),
+        // '/post': (context) => const PostScreen(),
         '/trip': (context) => const TripScreen(),
         '/map': (context) => const MapScreen(),
         '/profile': (context) => const ProfileScreen(),

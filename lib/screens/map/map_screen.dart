@@ -35,10 +35,19 @@ class _MapScreenState extends State<MapScreen> {
     },
   ];
 
+  final _scrollController = ScrollController();
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    
+    final screenHeight = MediaQuery.of(context).size.height;
+
     return Scaffold(
       body: Stack(
         children: [
@@ -112,7 +121,7 @@ class _MapScreenState extends State<MapScreen> {
                         border: InputBorder.none,
                         hintStyle: TextStyle(color: Colors.grey[400]),
                       ),
-                      style: const TextStyle(fontSize: 16),
+                      style: const TextStyle(fontSize: 13),
                     ),
                   ),
                 ],
@@ -120,76 +129,100 @@ class _MapScreenState extends State<MapScreen> {
             ),
           ),
           
-          // Bottom Sheet with Locations
-          Positioned(
-            left: 0,
-            right: 0,
-            bottom: 0,
-            child: Container(
-              height: MediaQuery.of(context).size.height * 0.4,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.1),
-                    blurRadius: 20,
-                    offset: const Offset(0, -5),
-                  ),
-                ],
-              ),
-              child: Column(
-                children: [
-                  // Handle
-                  Container(
-                    margin: const EdgeInsets.symmetric(vertical: 8),
-                    width: 40,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: Colors.grey[300],
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
-                  // Title
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          'Nearby Locations',
-                          style: theme.textTheme.titleLarge?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
+          // Draggable Bottom Sheet
+          Positioned.fill(
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                return NotificationListener<DraggableScrollableNotification>(
+                  onNotification: (notification) {
+                    // Handle scroll notifications if needed
+                    return true;
+                  },
+                  child: DraggableScrollableSheet(
+                    controller: DraggableScrollableController(),
+                    initialChildSize: 0.25, // 1/4 of screen height
+                    minChildSize: 0.25,     // 1/4 of screen height
+                    maxChildSize: 1.0,      // Full screen
+                    builder: (context, scrollController) {
+                      return Container(
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.1),
+                              blurRadius: 20,
+                              offset: const Offset(0, -5),
+                            ),
+                          ],
                         ),
-                        Text(
-                          '${_locations.length} places',
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            color: Colors.grey[600],
-                          ),
+                        child: Column(
+                          children: [
+                            // Handle
+                            GestureDetector(
+                              behavior: HitTestBehavior.opaque,
+                              onVerticalDragUpdate: (_) {},
+                              child: Container(
+                                padding: const EdgeInsets.only(top: 8, bottom: 4),
+                                alignment: Alignment.center,
+                                child: Container(
+                                  width: 40,
+                                  height: 4,
+                                  decoration: BoxDecoration(
+                                    color: Colors.grey[300],
+                                    borderRadius: BorderRadius.circular(2),
+                                  ),
+                                ),
+                              ),
+                            ),
+                            // Title
+                            Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(
+                                    'Nearby Locations',
+                                    style: theme.textTheme.titleLarge?.copyWith(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 18,
+                                    ),
+                                  ),
+                                  Text(
+                                    '${_locations.length} places',
+                                    style: theme.textTheme.bodyMedium?.copyWith(
+                                      color: Colors.grey[600],
+                                      fontSize: 13,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            // Location List
+                            Expanded(
+                              child: ListView.builder(
+                                controller: scrollController,
+                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                itemCount: _locations.length,
+                                itemBuilder: (context, index) {
+                                  final location = _locations[index];
+                                  return _buildLocationCard(context, location);
+                                },
+                              ),
+                            ),
+                          ],
                         ),
-                      ],
-                    ),
+                      );
+                    },
                   ),
-                  // Location List
-                  Expanded(
-                    child: ListView.builder(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                      itemCount: _locations.length,
-                      itemBuilder: (context, index) {
-                        final location = _locations[index];
-                        return _buildLocationCard(context, location);
-                      },
-                    ),
-                  ),
-                ],
-              ),
+                );
+              },
             ),
           ),
           
           // Floating Action Button for Current Location
           Positioned(
-            bottom: MediaQuery.of(context).size.height * 0.4 + 16,
+            bottom: MediaQuery.of(context).size.height * 0.3 + 16,
             right: 16,
             child: FloatingActionButton(
               onPressed: () {
@@ -252,7 +285,8 @@ class _MapScreenState extends State<MapScreen> {
                     Text(
                       location['title'],
                       style: theme.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 14,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -262,7 +296,7 @@ class _MapScreenState extends State<MapScreen> {
                       children: [
                         Icon(
                           Icons.location_on_outlined,
-                          size: 16,
+                          size: 14,
                           color: theme.primaryColor,
                         ),
                         const SizedBox(width: 4),
@@ -270,6 +304,8 @@ class _MapScreenState extends State<MapScreen> {
                           location['location'],
                           style: theme.textTheme.bodySmall?.copyWith(
                             color: Colors.grey[600],
+                            fontSize: 12,
+                            height: 1.2,
                           ),
                         ),
                       ],
@@ -279,7 +315,7 @@ class _MapScreenState extends State<MapScreen> {
                       children: [
                         // Rating
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
                           decoration: BoxDecoration(
                             color: theme.primaryColor.withOpacity(0.1),
                             borderRadius: BorderRadius.circular(4),
@@ -289,7 +325,7 @@ class _MapScreenState extends State<MapScreen> {
                             children: [
                               Icon(
                                 Icons.star,
-                                size: 14,
+                                size: 12,
                                 color: theme.primaryColor,
                               ),
                               const SizedBox(width: 2),
@@ -297,7 +333,9 @@ class _MapScreenState extends State<MapScreen> {
                                 location['rating'].toString(),
                                 style: theme.textTheme.bodySmall?.copyWith(
                                   color: theme.primaryColor,
-                                  fontWeight: FontWeight.bold,
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 11,
+                                  height: 1.2,
                                 ),
                               ),
                             ],
@@ -309,6 +347,8 @@ class _MapScreenState extends State<MapScreen> {
                           '• ${location['distance']} •',
                           style: theme.textTheme.bodySmall?.copyWith(
                             color: Colors.grey[500],
+                            fontSize: 11,
+                            height: 1.2,
                           ),
                         ),
                         // Year
@@ -316,6 +356,8 @@ class _MapScreenState extends State<MapScreen> {
                           ' ${location['year']}',
                           style: theme.textTheme.bodySmall?.copyWith(
                             color: Colors.grey[500],
+                            fontSize: 11,
+                            height: 1.2,
                           ),
                         ),
                       ],
