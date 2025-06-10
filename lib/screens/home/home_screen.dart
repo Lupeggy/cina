@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import '../movie_scene/movie_scene_detail_screen.dart';
 import '../../config/theme.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_typography.dart';
@@ -170,7 +171,17 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildAIRecommendationCard() {
     return GestureDetector(
       onTap: () {
-        // Navigate to personalized recommendations
+        // Navigate to AI Chat tab in search screen
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const SearchScreen(),
+            // Pass a parameter to select the AI Chat tab (index 1)
+            settings: const RouteSettings(
+              arguments: {'initialTabIndex': 1},
+            ),
+          ),
+        );
       },
       child: Container(
         padding: const EdgeInsets.all(16),
@@ -352,13 +363,19 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildMovieSceneCard(Map<String, dynamic> scene) {
     return GestureDetector(
       onTap: () {
-        // Navigate to scene details
+        // Navigate to the movie scene detail screen
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => MovieSceneDetailScreen(scene: scene),
+          ),
+        );
       },
       child: Container(
         width: 200,
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(12),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withOpacity(0.05),
@@ -370,62 +387,63 @@ class _HomeScreenState extends State<HomeScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Image with gradient overlay
+            // Scene image with play button overlay
             Stack(
               children: [
-                // Image
-                Container(
-                  height: 120,
-                  decoration: BoxDecoration(
-                    borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-                    image: DecorationImage(
-                      image: CachedNetworkImageProvider(scene['image'] as String),
-                      fit: BoxFit.cover,
+                // Scene image
+                ClipRRect(
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+                  child: CachedNetworkImage(
+                    imageUrl: scene['image'] ?? 'https://via.placeholder.com/200x120',
+                    height: 120,
+                    width: double.infinity,
+                    fit: BoxFit.cover,
+                    placeholder: (context, url) => Container(
+                      color: Colors.grey[200],
+                      height: 120,
+                      width: double.infinity,
+                    ),
+                    errorWidget: (context, url, error) => const Icon(Icons.error),
+                  ),
+                ),
+                // Play button overlay
+                Positioned.fill(
+                  child: Center(
+                    child: Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: const BoxDecoration(
+                        color: Colors.black54,
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.play_arrow,
+                        color: Colors.white,
+                        size: 24,
+                      ),
                     ),
                   ),
                 ),
-                // Gradient overlay
-                Container(
-                  height: 120,
-                  decoration: BoxDecoration(
-                    borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-                    gradient: LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: [
-                        Colors.transparent,
-                        Colors.black.withOpacity(0.6),
-                      ],
-                    ),
-                  ),
-                ),
-                // Distance badge
+                // Location tag
                 Positioned(
-                  top: 8,
-                  right: 8,
+                  bottom: 8,
+                  left: 8,
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: Colors.black54,
                       borderRadius: BorderRadius.circular(12),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.1),
-                          blurRadius: 4,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.location_on_outlined, size: 12, color: Theme.of(context).primaryColor),
-                        const SizedBox(width: 2),
+                        const Icon(Icons.location_on, size: 12, color: Colors.white),
+                        const SizedBox(width: 4),
                         Text(
-                          '${scene['distance']} mi',
+                          scene['location'] ?? 'Location',
                           style: const TextStyle(
+                            color: Colors.white,
                             fontSize: 10,
-                            fontWeight: FontWeight.w600,
+                            fontWeight: FontWeight.w500,
                           ),
                         ),
                       ],
@@ -434,7 +452,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ],
             ),
-            // Content
+            // Movie info
             Padding(
               padding: const EdgeInsets.all(12),
               child: Column(
@@ -443,11 +461,10 @@ class _HomeScreenState extends State<HomeScreen> {
                   // Title and rating
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Expanded(
                         child: Text(
-                          scene['title'] as String,
+                          scene['title'] ?? 'Movie Title',
                           style: const TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.bold,
@@ -462,7 +479,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           Icon(Icons.star_rounded, size: 14, color: Colors.amber[600]),
                           const SizedBox(width: 2),
                           Text(
-                            scene['rating'].toString(),
+                            scene['rating']?.toString() ?? '0.0',
                             style: const TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.w600,
@@ -473,34 +490,15 @@ class _HomeScreenState extends State<HomeScreen> {
                     ],
                   ),
                   const SizedBox(height: 4),
-                  // Movie title
+                  // Movie year
                   Text(
-                    scene['movie'] as String,
+                    '${scene['year'] ?? ''}',
                     style: TextStyle(
                       fontSize: 12,
                       color: Colors.grey[600],
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 4),
-                  // Location
-                  Row(
-                    children: [
-                      Icon(Icons.location_on_outlined, size: 12, color: Colors.grey[500]),
-                      const SizedBox(width: 4),
-                      Expanded(
-                        child: Text(
-                          scene['location'] as String,
-                          style: TextStyle(
-                            fontSize: 11,
-                            color: Colors.grey[600],
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ],
                   ),
                 ],
               ),

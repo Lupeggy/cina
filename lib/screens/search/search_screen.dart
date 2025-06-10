@@ -29,6 +29,17 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
+    
+    // Check for initial tab index from route arguments
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+      if (args != null && args.containsKey('initialTabIndex')) {
+        final initialTabIndex = args['initialTabIndex'] as int;
+        if (initialTabIndex >= 0 && initialTabIndex < _tabController.length) {
+          _tabController.animateTo(initialTabIndex);
+        }
+      }
+    });
   }
 
   @override
