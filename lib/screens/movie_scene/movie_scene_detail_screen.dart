@@ -1,7 +1,13 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:cina/core/constants/app_colors.dart';
+import 'package:cina/core/constants/app_typography.dart';
+import 'package:flutter/foundation.dart' show kDebugMode;
+import 'package:share_plus/share_plus.dart';
 
 // Mock data for nearby movie scenes
 final List<Map<String, dynamic>> _nearbyScenes = [
@@ -9,7 +15,7 @@ final List<Map<String, dynamic>> _nearbyScenes = [
     'title': 'The Dark Knight Rises',
     'movie': 'The Dark Knight Rises',
     'location': 'Wall Street, New York',
-    'image': 'https://images.unsplash.com/photo-1509347528162-9f1cbee0fdb5?ixlib=rb-4.0.3&auto=format&fit=crop&w=1470&q=80',
+    'image': 'https://picsum.photos/600/400?random=10',
     'distance': '0.8 km',
     'rating': 4.7,
   },
@@ -17,7 +23,7 @@ final List<Map<String, dynamic>> _nearbyScenes = [
     'title': 'Spider-Man: Homecoming',
     'movie': 'Spider-Man: Homecoming',
     'location': 'Queens, New York',
-    'image': 'https://images.unsplash.com/photo-1551649001-7a2485554199?ixlib=rb-4.0.3&auto=format&fit=crop&w=1470&q=80',
+    'image': 'https://picsum.photos/600/400?random=11',
     'distance': '1.2 km',
     'rating': 4.5,
   },
@@ -25,7 +31,7 @@ final List<Map<String, dynamic>> _nearbyScenes = [
     'title': 'The Devil Wears Prada',
     'movie': 'The Devil Wears Prada',
     'location': '5th Avenue, New York',
-    'image': 'https://images.unsplash.com/photo-1617802690992-8dee87211d4b?ixlib=rb-4.0.3&auto=format&fit=crop&w=1470&q=80',
+    'image': 'https://picsum.photos/600/400?random=12',
     'distance': '1.5 km',
     'rating': 4.3,
   },
@@ -40,509 +46,572 @@ class MovieSceneDetailScreen extends StatefulWidget {
   State<MovieSceneDetailScreen> createState() => _MovieSceneDetailScreenState();
 }
 
-class _MovieSceneDetailScreenState extends State<MovieSceneDetailScreen> {
+class _SliverAppBarDelegate extends SliverPersistentHeaderDelegate {
+  final TabBar _tabBar;
+
+  _SliverAppBarDelegate(this._tabBar);
+
+  @override
+  double get minExtent => _tabBar.preferredSize.height;
+  
+  @override
+  double get maxExtent => _tabBar.preferredSize.height;
+
+  @override
+  Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
+    return Container(
+      color: Theme.of(context).scaffoldBackgroundColor,
+      child: _tabBar,
+    );
+  }
+
+  @override
+  bool shouldRebuild(covariant SliverPersistentHeaderDelegate oldDelegate) {
+    return false;
+  }
+}
+
+class _MovieSceneDetailScreenState extends State<MovieSceneDetailScreen> with SingleTickerProviderStateMixin {
   bool isSaved = false;
+  bool _isLoading = true;
   LatLng? _selectedLocation;
   GoogleMapController? _mapController;
+  late TabController _tabController;
+  bool isMapExpanded = false;
+  final Completer<GoogleMapController> _controller = Completer<GoogleMapController>();
+  final Set<Marker> _markers = {};
+  late AnimationController _animationController;
+  late Animation<double> _fadeAnimation;
 
   @override
   void initState() {
     super.initState();
-    // Set initial location (in a real app, this would come from the scene data)
-    _selectedLocation = const LatLng(-33.8688, 151.2093); // Default to Sydney
+    _tabController = TabController(length: 3, vsync: this);
+    _animationController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 500),
+    );
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _animationController,
+        curve: Curves.easeIn,
+      ),
+    );
+    
+    _initializeData();
   }
 
-  // Build more scenes from the same movie section
-  Widget _buildMoreScenesSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'More Scenes from ${widget.scene['title']}',
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.bold,
-          ),
+  Future<void> _initializeData() async {
+    try {
+      if (kDebugMode) {
+        debugPrint('Received scene data: ${widget.scene.toString()}');
+      }
+      
+      _selectedLocation = LatLng(
+        widget.scene['lat'] ?? 40.7128, // Default to NYC
+        widget.scene['lng'] ?? -74.0060,
+      );
+      
+      _addMarker();
+      _animationController.forward();
+      
+      await Future.delayed(const Duration(milliseconds: 500));
+      
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+      
+    } catch (e) {
+      debugPrint('Error initializing MovieSceneDetailScreen: $e');
+      _selectedLocation = const LatLng(40.7128, -74.0060);
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _mapController?.dispose();
+    _tabController.dispose();
+    _animationController.dispose();
+    super.dispose();
+  }
+
+  void _addMarker() {
+    if (_selectedLocation == null) return;
+    
+    _markers.add(
+      Marker(
+        markerId: const MarkerId('scene_location'),
+        position: _selectedLocation!,
+        infoWindow: InfoWindow(
+          title: widget.scene['title']?.toString() ?? 'Movie Location',
+          snippet: widget.scene['location']?.toString() ?? 'Filming Location',
         ),
-        const SizedBox(height: 12),
-        SizedBox(
-          height: 120,
-          child: ListView.builder(
-            scrollDirection: Axis.horizontal,
-            itemCount: 3, // Example count
-            itemBuilder: (context, index) {
-              return Container(
-                width: 160,
-                margin: const EdgeInsets.only(right: 12),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(8),
-                  image: DecorationImage(
-                    image: NetworkImage(widget.scene['image'] ?? 'https://via.placeholder.com/160x120'),
-                    fit: BoxFit.cover,
-                  ),
-                ),
-                child: Container(
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(8),
-                    gradient: LinearGradient(
-                      begin: Alignment.bottomCenter,
-                      end: Alignment.topCenter,
-                      colors: [
-                        Colors.black.withOpacity(0.7),
-                        Colors.transparent,
-                      ],
-                    ),
-                  ),
-                  padding: const EdgeInsets.all(8),
-                  alignment: Alignment.bottomLeft,
-                  child: Text(
-                    'Scene ${index + 1}\n${widget.scene['location']}',
-                    style: const TextStyle(color: Colors.white, fontSize: 12),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-              );
-            },
-          ),
-        ),
-      ],
+      ),
     );
   }
 
-  // Build nearby movie scenes section
-  Widget _buildNearbyScenesSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const SizedBox(height: 24),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Text(
-            'Nearby Movie Scenes',
-            style: const TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: Colors.black87,
-            ),
-          ),
+  void _toggleMapSize() {
+    setState(() {
+      isMapExpanded = !isMapExpanded;
+    });
+  }
+
+  Future<void> _launchMaps() async {
+    if (_selectedLocation == null) return;
+    
+    final url = 'https://www.google.com/maps/search/?api=1&query=${_selectedLocation!.latitude},${_selectedLocation!.longitude}';
+    if (await canLaunchUrl(Uri.parse(url))) {
+      await launchUrl(Uri.parse(url));
+    } else {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Could not launch maps')),
+        );
+      }
+    }
+  }
+
+  Widget _buildInfoRow(IconData icon, String text, {VoidCallback? onTap}) {
+    return InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8.0),
+        child: Row(
+          children: [
+            Icon(icon, size: 20, color: Colors.grey[600]),
+            const SizedBox(width: 12),
+            Expanded(child: Text(text, style: const TextStyle(fontSize: 15))),
+            if (onTap != null) const Icon(Icons.chevron_right, color: Colors.grey),
+          ],
         ),
-        const SizedBox(height: 8),
-        SizedBox(
-          height: 240,
-          child: ListView.separated(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            scrollDirection: Axis.horizontal,
-            itemCount: _nearbyScenes.length,
-            separatorBuilder: (_, __) => const SizedBox(width: 16),
-            itemBuilder: (context, index) {
-              final scene = _nearbyScenes[index];
-              return GestureDetector(
-                onTap: () {
-                  Navigator.pushReplacement(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => MovieSceneDetailScreen(scene: scene),
+      ),
+    );
+  }
+  
+  Widget _buildSceneCard(BuildContext context, Map<String, dynamic> scene) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 16.0),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12.0),
+      ),
+      child: InkWell(
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => MovieSceneDetailScreen(scene: scene),
+            ),
+          );
+        },
+        borderRadius: BorderRadius.circular(12.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            ClipRRect(
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(12.0)),
+              child: CachedNetworkImage(
+                imageUrl: scene['image'] ?? '',
+                height: 150,
+                width: double.infinity,
+                fit: BoxFit.cover,
+                placeholder: (context, url) => Container(
+                  height: 150,
+                  color: Colors.grey[200],
+                  child: const Center(child: CircularProgressIndicator()),
+                ),
+                errorWidget: (context, url, error) => Container(
+                  height: 150,
+                  color: Colors.grey[200],
+                  child: const Icon(Icons.error),
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(12.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    scene['title'] ?? 'Unknown',
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
                     ),
-                  );
-                },
-                child: Container(
-                  width: 200,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(12),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.05),
-                        blurRadius: 10,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                  const SizedBox(height: 4),
+                  Text(
+                    scene['movie'] ?? 'Unknown',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.grey[600],
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
                     children: [
-                      // Scene image with play button overlay
-                      Stack(
-                        children: [
-                          // Scene image
-                          ClipRRect(
-                            borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
-                            child: Image.network(
-                              scene['image'],
-                              height: 120,
-                              width: double.infinity,
-                              fit: BoxFit.cover,
-                            ),
-                          ),
-                          // Play button overlay
-                          Positioned.fill(
-                            child: Center(
-                              child: Container(
-                                padding: const EdgeInsets.all(8),
-                                decoration: const BoxDecoration(
-                                  color: Colors.black54,
-                                  shape: BoxShape.circle,
-                                ),
-                                child: const Icon(
-                                  Icons.play_arrow,
-                                  color: Colors.white,
-                                  size: 24,
-                                ),
-                              ),
-                            ),
-                          ),
-                          // Location tag
-                          Positioned(
-                            bottom: 8,
-                            left: 8,
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                              decoration: BoxDecoration(
-                                color: Colors.black54,
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  const Icon(Icons.location_on, size: 12, color: Colors.white),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    scene['location'] ?? 'Location',
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      // Movie info
-                      Padding(
-                        padding: const EdgeInsets.all(12),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            // Title and rating
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Expanded(
-                                  child: Text(
-                                    scene['title'] ?? 'Movie Title',
-                                    style: const TextStyle(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.black87,
-                                    ),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-                                Row(
-                                  children: [
-                                    Icon(Icons.star_rounded, size: 14, color: Colors.amber[600]),
-                                    const SizedBox(width: 2),
-                                    Text(
-                                      scene['rating']?.toString() ?? '0.0',
-                                      style: const TextStyle(
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 4),
-                            // Movie location
-                            Text(
-                              scene['location'] ?? '',
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: Colors.grey[600],
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ],
+                      const Icon(Icons.location_on, size: 14, color: Colors.grey),
+                      const SizedBox(width: 4),
+                      Expanded(
+                        child: Text(
+                          scene['location'] ?? 'Unknown Location',
+                          style: const TextStyle(fontSize: 13, color: Colors.grey),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
+                      if (scene['distance'] != null) ...[
+                        const Icon(Icons.directions_walk, size: 14, color: Colors.grey),
+                        const SizedBox(width: 4),
+                        Text(
+                          scene['distance'],
+                          style: const TextStyle(fontSize: 13, color: Colors.grey),
+                        ),
+                      ],
                     ],
                   ),
-                ),
-              );
-            },
-          ),
+                ],
+              ),
+            ),
+          ],
         ),
-      ],
+      ),
+    );
+  }
+
+  Widget _buildNearbyScenes() {
+    if (_nearbyScenes.isEmpty) {
+      return const Center(
+        child: Text('No nearby scenes found'),
+      );
+    }
+
+    return ListView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: _nearbyScenes.length,
+      itemBuilder: (context, index) {
+        return _buildSceneCard(context, _nearbyScenes[index]);
+      },
     );
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    
-    return Scaffold(
-      body: CustomScrollView(
-        slivers: [
-          // App Bar with back button and save button
-          SliverAppBar(
-            expandedHeight: 300,
-            pinned: true,
-            flexibleSpace: FlexibleSpaceBar(
-              background: Stack(
-                fit: StackFit.expand,
-                children: [
-                  // Movie scene image
-                  Image.network(
-                    widget.scene['image'] ?? 'https://via.placeholder.com/800x600?text=Movie+Scene',
-                    fit: BoxFit.cover,
+    final size = MediaQuery.of(context).size;
+
+    if (_isLoading) {
+      return const Scaffold(
+        body: Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
+
+    try {
+      final title = widget.scene['title']?.toString() ?? 'Movie Scene';
+      final imageUrl = widget.scene['image']?.toString() ?? '';
+      final location = widget.scene['location']?.toString() ?? 'Unknown Location';
+      final description = widget.scene['description']?.toString() ?? 'No description available.';
+      final year = widget.scene['year']?.toString() ?? '';
+      final director = widget.scene['director']?.toString() ?? 'Unknown';
+      final cast = widget.scene['cast']?.toString() ?? 'Unknown';
+      final rating = (widget.scene['rating'] as num?)?.toDouble() ?? 0.0;
+
+      return Scaffold(
+        body: NestedScrollView(
+          headerSliverBuilder: (context, innerBoxIsScrolled) => [
+            SliverAppBar(
+              expandedHeight: size.height * 0.4,
+              pinned: true,
+              flexibleSpace: FlexibleSpaceBar(
+                title: Text(
+                  title,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
                   ),
-                  // Gradient overlay
-                  DecoratedBox(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [
-                          Colors.transparent,
-                          Colors.black.withOpacity(0.7),
-                        ],
+                ),
+                background: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    CachedNetworkImage(
+                      imageUrl: imageUrl,
+                      fit: BoxFit.cover,
+                      placeholder: (context, url) => Container(
+                        color: Colors.grey[200],
+                        child: const Center(child: CircularProgressIndicator()),
+                      ),
+                      errorWidget: (context, url, error) => Container(
+                        color: Colors.grey[200],
+                        child: const Icon(Icons.error),
                       ),
                     ),
-                  ),
-                ],
-              ),
-            ),
-            leading: IconButton(
-              icon: Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: Colors.black54,
-                  shape: BoxShape.circle,
+                    Container(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            Colors.transparent,
+                            Colors.black.withOpacity(0.7),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-                child: const Icon(Icons.arrow_back, color: Colors.white),
               ),
-              onPressed: () => Navigator.pop(context),
-            ),
-            actions: [
-              IconButton(
+              leading: IconButton(
                 icon: Container(
                   padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
+                  decoration: const BoxDecoration(
                     color: Colors.black54,
                     shape: BoxShape.circle,
                   ),
-                  child: Icon(
-                    isSaved ? Icons.bookmark : Icons.bookmark_border,
-                    color: isSaved ? theme.primaryColor : Colors.white,
-                  ),
+                  child: const Icon(Icons.arrow_back, color: Colors.white),
                 ),
-                onPressed: () {
-                  setState(() {
-                    isSaved = !isSaved;
-                  });
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(isSaved ? 'Added to saved places' : 'Removed from saved places'),
-                      duration: const Duration(seconds: 1),
-                    ),
-                  );
-                },
+                onPressed: () => Navigator.pop(context),
               ),
-            ],
-          ),
-          
-          // Content
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Title and basic info
-                  Text(
-                    widget.scene['title'] ?? 'Movie Title',
-                    style: theme.textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.bold,
+              actions: [
+                IconButton(
+                  icon: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: const BoxDecoration(
+                      color: Colors.black54,
+                      shape: BoxShape.circle,
                     ),
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      const Icon(Icons.location_on_outlined, size: 16, color: Colors.grey),
-                      const SizedBox(width: 4),
-                      Text(
-                        widget.scene['location'] ?? 'Location',
-                        style: theme.textTheme.bodyMedium?.copyWith(color: Colors.grey[600]),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  
-                  // Movie scene description
-                  Text(
-                    'This famous scene from ${widget.scene['title']} was filmed at this location. ' 
-                    'It features an iconic moment from the movie that fans will recognize immediately. ',
-                    style: theme.textTheme.bodyMedium,
-                  ),
-                  const SizedBox(height: 24),
-                  
-                  // Map section
-                  Text(
-                    'Location',
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
+                    child: Icon(
+                      isSaved ? Icons.bookmark : Icons.bookmark_border,
+                      color: isSaved ? theme.primaryColor : Colors.white,
                     ),
-                  ),
-                  const SizedBox(height: 12),
-                  Container(
-                    height: 200,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.grey[300]!),
-                    ),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(12),
-                      child: GoogleMap(
-                        initialCameraPosition: CameraPosition(
-                          target: _selectedLocation!,
-                          zoom: 14.0,
-                        ),
-                        markers: {
-                          if (_selectedLocation != null)
-                            Marker(
-                              markerId: const MarkerId('scene_location'),
-                              position: _selectedLocation!,
-                              infoWindow: InfoWindow(
-                                title: widget.scene['title'] ?? 'Movie Scene',
-                                snippet: widget.scene['location'],
-                              ),
-                            ),
-                        },
-                        onMapCreated: (controller) {
-                          setState(() {
-                            _mapController = controller;
-                          });
-                        },
-                        myLocationEnabled: true,
-                        myLocationButtonEnabled: false,
-                        zoomControlsEnabled: false,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  
-                  // Action buttons
-                  Row(
-                    children: [
-                      Expanded(
-                        child: OutlinedButton.icon(
-                          icon: const Icon(Icons.directions, size: 20),
-                          label: const Text('Directions'),
-                          style: OutlinedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(vertical: 12),
-                            side: BorderSide(color: theme.primaryColor),
-                          ),
-                          onPressed: () async {
-                            // In a real app, this would open the map app with directions
-                            final url = Uri.parse('https://www.google.com/maps/dir/?api=1&destination=${_selectedLocation!.latitude},${_selectedLocation!.longitude}');
-                            if (await canLaunchUrl(url)) {
-                              await launchUrl(url);
-                            }
-                          },
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: FilledButton.icon(
-                          icon: const Icon(Icons.save_alt, size: 20),
-                          label: const Text('Save Location'),
-                          style: FilledButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(vertical: 12),
-                            backgroundColor: theme.primaryColor,
-                          ),
-                          onPressed: () {
-                            setState(() {
-                              isSaved = !isSaved;
-                            });
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(isSaved ? 'Location saved!' : 'Location unsaved'),
-                                duration: const Duration(seconds: 1),
-                              ),
-                            );
-                          },
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 24),
-                  
-                  // More scenes from this movie
-                  _buildMoreScenesSection(),
-                  _buildNearbyScenesSection(),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-      // Bottom navigation bar with share and visit buttons
-      bottomNavigationBar: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.1),
-              blurRadius: 10,
-              offset: const Offset(0, -2),
-            ),
-          ],
-        ),
-        child: SafeArea(
-          child: Row(
-            children: [
-              // Share button
-              IconButton(
-                icon: const Icon(Icons.share),
-                onPressed: () {
-                  // Share functionality would go here
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Sharing this location...')),
-                  );
-                },
-              ),
-              const SizedBox(width: 8),
-              // Visit button
-              Expanded(
-                child: FilledButton.icon(
-                  icon: const Icon(Icons.flag, size: 20),
-                  label: const Text('I Visited This Location'),
-                  style: FilledButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    backgroundColor: theme.primaryColor,
                   ),
                   onPressed: () {
-                    // Mark as visited functionality
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Added to your visited locations!'),
-                        duration: Duration(seconds: 2),
-                      ),
-                    );
+                    try {
+                      setState(() {
+                        isSaved = !isSaved;
+                      });
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(isSaved ? 'Added to saved' : 'Removed from saved'),
+                          duration: const Duration(seconds: 1),
+                        ),
+                      );
+                    } catch (e) {
+                      debugPrint('Error in bookmark action: $e');
+                    }
                   },
                 ),
+                IconButton(
+                  icon: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: const BoxDecoration(
+                      color: Colors.black54,
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(Icons.share, color: Colors.white, size: 20),
+                  ),
+                  onPressed: () {
+                    try {
+                      Share.share('Check out this movie scene: $title at $location');
+                    } catch (e) {
+                      debugPrint('Error sharing: $e');
+                    }
+                  },
+                ),
+              ],
+            ),
+            SliverPersistentHeader(
+              delegate: _SliverAppBarDelegate(
+                TabBar(
+                  controller: _tabController,
+                  labelColor: theme.primaryColor,
+                  unselectedLabelColor: Colors.grey,
+                  indicatorColor: theme.primaryColor,
+                  tabs: const [
+                    Tab(text: 'Details'),
+                    Tab(text: 'Location'),
+                    Tab(text: 'Scenes'),
+                  ],
+                ),
+              ),
+              pinned: true,
+            ),
+          ],
+          body: TabBarView(
+            controller: _tabController,
+            children: [
+              // Details Tab
+              SingleChildScrollView(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'About',
+                      style: theme.textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      description,
+                      style: theme.textTheme.bodyLarge,
+                    ),
+                    const SizedBox(height: 24),
+                    _buildInfoRow(
+                      Icons.movie,
+                      'Movie: ${widget.scene['movie'] ?? 'Unknown'}' ,
+                    ),
+                    _buildInfoRow(
+                      Icons.person,
+                      'Director: $director',
+                    ),
+                    _buildInfoRow(
+                      Icons.people,
+                      'Cast: $cast',
+                    ),
+                    if (year.isNotEmpty)
+                      _buildInfoRow(
+                        Icons.calendar_today,
+                        'Year: $year',
+                      ),
+                    _buildInfoRow(
+                      Icons.star,
+                      'Rating: ${rating.toStringAsFixed(1)}/5.0',
+                    ),
+                    const SizedBox(height: 24),
+                    const Text(
+                      'Nearby Scenes',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    SizedBox(
+                      height: 200,
+                      child: ListView.builder(
+                        scrollDirection: Axis.horizontal,
+                        itemCount: _nearbyScenes.length,
+                        itemBuilder: (context, index) {
+                          final scene = _nearbyScenes[index];
+                          return SizedBox(
+                            width: 300,
+                            child: _buildSceneCard(context, scene),
+                          );
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              // Location Tab
+              SingleChildScrollView(
+                child: Column(
+                  children: [
+                    GestureDetector(
+                      onTap: _toggleMapSize,
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 300),
+                        height: isMapExpanded ? size.height * 0.6 : 300,
+                        child: Stack(
+                          children: [
+                            GoogleMap(
+                              initialCameraPosition: CameraPosition(
+                                target: _selectedLocation ?? const LatLng(40.7128, -74.0060),
+                                zoom: 14.0,
+                              ),
+                              markers: _markers,
+                              myLocationButtonEnabled: true,
+                              myLocationEnabled: true,
+                              onMapCreated: (GoogleMapController controller) {
+                                _controller.complete(controller);
+                                _mapController = controller;
+                              },
+                            ),
+                            Positioned(
+                              bottom: 16,
+                              right: 16,
+                              child: FloatingActionButton(
+                                heroTag: 'location_fab',
+                                mini: true,
+                                onPressed: _launchMaps,
+                                child: const Icon(Icons.directions, size: 20),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Location',
+                            style: theme.textTheme.titleLarge?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            location,
+                            style: theme.textTheme.bodyLarge,
+                          ),
+                          const SizedBox(height: 8),
+                          SizedBox(
+                            width: double.infinity,
+                            child: ElevatedButton.icon(
+                              icon: const Icon(Icons.directions, size: 20),
+                              label: const Text('Get Directions'),
+                              onPressed: _launchMaps,
+                              style: ElevatedButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(vertical: 12),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              // Scenes Tab
+              SingleChildScrollView(
+                padding: const EdgeInsets.all(16.0),
+                child: _buildNearbyScenes(),
               ),
             ],
           ),
         ),
-      ),
-    );
+      );
+    } catch (e) {
+      debugPrint('Error in MovieSceneDetailScreen build: $e');
+      return Scaffold(
+        appBar: AppBar(
+          title: const Text('Error'),
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back),
+            onPressed: () => Navigator.pop(context),
+          ),
+        ),
+        body: const Center(
+          child: Text('An error occurred while loading this scene.'),
+        ),
+      );
+    }
   }
 }

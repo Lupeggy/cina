@@ -96,7 +96,27 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                 IconButton(
                   icon: const Icon(Icons.settings_outlined, color: Colors.white),
                   onPressed: () {
-                    // Navigate to settings
+                    showDialog(
+                      context: context,
+                      builder: (context) => AlertDialog(
+                        title: const Text('Logout'),
+                        content: const Text('Are you sure you want to logout?'),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(context),
+                            child: const Text('Cancel'),
+                          ),
+                          TextButton(
+                            onPressed: () {
+                              // Clear any local storage or authentication state
+                              // TODO: Add actual logout logic here
+                              Navigator.of(context).pushReplacementNamed('/login');
+                            },
+                            child: const Text('Logout'),
+                          ),
+                        ],
+                      ),
+                    );
                   },
                 ),
               ],

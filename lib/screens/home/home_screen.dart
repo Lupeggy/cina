@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import '../movie_scene/movie_scene_detail_screen.dart';
-import '../../config/theme.dart';
-import '../../core/constants/app_colors.dart';
-import '../../core/constants/app_typography.dart';
-import '../search/search_screen.dart';
-import '../profile/profile_screen.dart';
-import '../trip/trip_screen.dart';
-import '../map/map_screen.dart';
+import 'package:cina/screens/movie_scene/movie_scene_detail_screen.dart';
+import 'package:cina/config/theme.dart';
+import 'package:cina/core/constants/app_colors.dart';
+import 'package:cina/core/constants/app_typography.dart';
+import 'package:cina/screens/search/search_screen.dart';
+import 'package:cina/screens/profile/profile_screen.dart';
+import 'package:cina/screens/trip/trip_screen.dart';
+import 'package:cina/screens/map/map_screen.dart';
+import 'package:cina/core/routes/app_router.dart';
 
 // Content filter enum
 enum ContentFilter {
@@ -32,7 +33,7 @@ final List<Map<String, dynamic>> _movieScenes = [
     'title': 'The Dark Knight',
     'movie': 'The Dark Knight',
     'location': 'Chicago, IL',
-    'image': 'https://images.unsplash.com/photo-1531259736756-6caccf485f81?ixlib=rb-4.0.3&auto=format&fit=crop&w=1470&q=80',
+    'image': 'https://picsum.photos/600/400?random=6',
     'distance': '2.5 km',
     'rating': 4.8,
     'year': 2008,
@@ -41,7 +42,7 @@ final List<Map<String, dynamic>> _movieScenes = [
     'title': 'Spider-Man: No Way Home',
     'movie': 'Spider-Man: No Way Home',
     'location': 'New York, NY',
-    'image': 'https://images.unsplash.com/photo-1635805737707-575885ab0820?ixlib=rb-4.0.3&auto=format&fit=crop&w=1374&q=80',
+    'image': 'https://picsum.photos/600/400?random=7',
     'distance': '5.1 km',
     'rating': 4.7,
     'year': 2021,
@@ -50,7 +51,7 @@ final List<Map<String, dynamic>> _movieScenes = [
     'title': 'Inception',
     'movie': 'Inception',
     'location': 'Los Angeles, CA',
-    'image': 'https://images.unsplash.com/photo-1620640695378-5fde49ab7528?ixlib=rb-4.0.3&auto=format&fit=crop&w=1469&q=80',
+    'image': 'https://picsum.photos/600/400?random=8',
     'distance': '3.2 km',
     'rating': 4.6,
     'year': 2010,
@@ -59,7 +60,7 @@ final List<Map<String, dynamic>> _movieScenes = [
     'title': 'The Avengers',
     'movie': 'The Avengers',
     'location': 'Cleveland, OH',
-    'image': 'https://images.unsplash.com/photo-1534447677768-be436bb09401?ixlib=rb-4.0.3&auto=format&fit=crop&w=1494&q=80',
+    'image': 'https://picsum.photos/600/400?random=9',
     'distance': '7.8 km',
     'rating': 4.5,
     'year': 2012,
@@ -72,13 +73,13 @@ final List<Map<String, dynamic>> _funTrips = [
     'title': 'Marvel Cinematic Tour',
     'scenes': 8,
     'duration': '2 days',
-    'image': 'https://images.unsplash.com/photo-1630000415219-495422827e2b?ixlib=rb-4.0.3&auto=format&fit=crop&w=1470&q=80',
+    'image': 'https://picsum.photos/600/400?random=1',
   },
   {
     'title': 'Nolan\'s Filming Spots',
     'scenes': 5,
     'duration': '1 day',
-    'image': 'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?ixlib=rb-4.0.3&auto=format&fit=crop&w=1470&q=80',
+    'image': 'https://picsum.photos/600/400?random=2',
   },
 ];
 
@@ -363,13 +364,20 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildMovieSceneCard(Map<String, dynamic> scene) {
     return GestureDetector(
       onTap: () {
-        // Navigate to the movie scene detail screen
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => MovieSceneDetailScreen(scene: scene),
-          ),
-        );
+        try {
+          // Navigate to the movie scene detail screen
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => MovieSceneDetailScreen(scene: scene),
+            ),
+          );
+        } catch (e) {
+          debugPrint('Error navigating to movie scene detail: $e');
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Could not open scene details')),
+          );
+        }
       },
       child: Container(
         width: 200,
@@ -517,19 +525,19 @@ class _HomeScreenState extends State<HomeScreen> {
         'title': 'Marvel Movie Tour',
         'scenes': 8,
         'duration': '4h 30m',
-        'imageUrl': 'https://example.com/marvel-tour.jpg',
+        'imageUrl': 'https://picsum.photos/600/400?random=3',
       },
       {
         'title': 'Romantic NYC',
         'scenes': 5,
         'duration': '3h 15m',
-        'imageUrl': 'https://example.com/romantic-nyc.jpg',
+        'imageUrl': 'https://picsum.photos/600/400?random=4',
       },
       {
         'title': 'Classic Movie Spots',
         'scenes': 6,
         'duration': '5h',
-        'imageUrl': 'https://example.com/classic-movies.jpg',
+        'imageUrl': 'https://picsum.photos/600/400?random=5',
       },
     ];
 
@@ -848,52 +856,21 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                     const SizedBox(width: 4),
                   ],
-                  flexibleSpace: FlexibleSpaceBar(
-                    background: Container(
-                      decoration: const BoxDecoration(
-                        color: Colors.white,
-                      ),
-                    ),
-                  ),
                 ),
               ];
             },
-            body: RefreshIndicator(
-              onRefresh: () async {
-                // Handle refresh
-                await Future.delayed(const Duration(seconds: 1));
-              },
-              child: SingleChildScrollView(
-                physics: const AlwaysScrollableScrollPhysics(),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // 1. Personalized Hero Section
-                    _buildHeroSection(),
-                    
-                    // 2. Quick Action Buttons
-                    _buildFilterChips(),
-                    
-                    // 3. Nearby Movie Scenes Section
-                    _buildSectionHeader(
-                      'Nearby Movie Scenes', 
-                      onSeeAll: () {}
-                    ),
-                    _buildMovieScenesList(),
-                    
-                    // 4. Fun Trips Section
-                    _buildSectionHeader(
-                      'Popular Movie Trips',
-                      onSeeAll: () {}
-                    ),
-                    _buildFunTripsList(),
-                    
-                    // 5. AI-Powered Trip Planning
-                    _buildAITripPlanningSection(),
-                    
-                    const SizedBox(height: 100), // Extra space for bottom navigation
-                  ],
-                ),
+            body: SingleChildScrollView(
+              child: Column(
+                children: [
+                  _buildHeroSection(),
+                  _buildFilterChips(),
+                  _buildSectionHeader('Popular Movie Scenes'),
+                  _buildMovieScenesList(),
+                  _buildSectionHeader('Fun Trips Near You'),
+                  _buildFunTripsList(),
+                  _buildAITripPlanningSection(),
+                  const SizedBox(height: 80),
+                ],
               ),
             ),
           ),

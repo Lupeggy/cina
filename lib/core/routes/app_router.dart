@@ -7,6 +7,11 @@ import 'package:cina/screens/auth/login_screen.dart';
 import 'package:cina/screens/auth/register_screen.dart';
 import 'package:cina/screens/auth/auth_wrapper.dart';
 import 'package:cina/screens/trip/trip_screen.dart';
+import 'package:cina/screens/map/map_screen.dart';
+import 'package:cina/screens/onboarding/onboarding_screen.dart';
+import 'package:cina/screens/onboarding/questions_screen.dart';
+import 'package:cina/screens/onboarding/location_screen.dart';
+import 'package:cina/screens/onboarding/app_intro_screen.dart';
 
 class AppRouter {
   // Auth routes
@@ -20,6 +25,13 @@ class AppRouter {
   static const String post = '/post';
   static const String profile = '/profile';
   static const String trip = '/trip';
+  static const String map = '/map';
+  
+  // Onboarding routes
+  static const String onboarding = '/onboarding';
+  static const String questions = '/questions';
+  static const String location = '/location';
+  static const String appIntro = '/app-intro';
 
   static Route<dynamic> generateRoute(RouteSettings settings) {
     switch (settings.name) {
@@ -42,6 +54,18 @@ class AppRouter {
         return MaterialPageRoute(builder: (_) => const ProfileScreen());
       case trip:
         return MaterialPageRoute(builder: (_) => const TripScreen());
+      case map:
+        return MaterialPageRoute(builder: (_) => const MapScreen());
+        
+      // Onboarding routes
+      case onboarding:
+        return MaterialPageRoute(builder: (_) => const OnboardingScreen());
+      case questions:
+        return MaterialPageRoute(builder: (_) => const QuestionsScreen());
+      case location:
+        return MaterialPageRoute(builder: (_) => const LocationScreen());
+      case appIntro:
+        return MaterialPageRoute(builder: (_) => const AppIntroScreen());
       
       default:
         return MaterialPageRoute(

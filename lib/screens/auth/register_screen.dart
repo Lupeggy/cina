@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import '../../services/auth_service.dart';
-import '../../widgets/auth/auth_form.dart';
+import 'package:cina/core/routes/app_router.dart';
+import 'package:cina/widgets/auth/auth_form.dart';
 
 class RegisterScreen extends StatelessWidget {
   const RegisterScreen({Key? key}) : super(key: key);
@@ -18,12 +17,22 @@ class RegisterScreen extends StatelessWidget {
           child: AuthForm(
             isLogin: false,
             onSubmit: (email, password) async {
-              try {
-                await context.read<AuthService>().registerWithEmailAndPassword(email, password);
-              } catch (e) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text(e.toString())),
-                );
+              // Show loading indicator
+              showDialog(
+                context: context,
+                barrierDismissible: false,
+                builder: (context) => const Center(
+                  child: CircularProgressIndicator(),
+                ),
+              );
+              
+              // Simulate network delay
+              await Future.delayed(const Duration(seconds: 1));
+              
+              // Close loading indicator and navigate to home
+              if (context.mounted) {
+                Navigator.of(context).pop();
+                Navigator.of(context).pushReplacementNamed(AppRouter.home);
               }
             },
           ),

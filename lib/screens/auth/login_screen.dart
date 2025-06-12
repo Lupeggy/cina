@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cina/core/theme/app_colors.dart';
 import 'package:cina/core/theme/app_typography.dart';
 import 'package:cina/core/theme/app_theme.dart';
-import 'package:cina/screens/home/home_screen.dart';
+import 'package:cina/core/routes/app_router.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({Key? key}) : super(key: key);
@@ -25,35 +25,24 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Future<void> _submit() async {
-    debugPrint('Login button pressed');
     if (_formKey.currentState?.validate() ?? false) {
-      debugPrint('Form is valid');
-      // Handle login logic here
-      final email = _emailController.text;
-      final password = _passwordController.text;
+      // Show loading indicator
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
       
-      debugPrint('Email: $email');
-      debugPrint('Password: $password');
+      // Simulate network delay
+      await Future.delayed(const Duration(seconds: 1));
       
-      try {
-        // After successful login, navigate to home screen
-        debugPrint('Navigating to HomeScreen...');
-        // Navigate to home screen after successful login
-        debugPrint('Navigating to HomeScreen...');
-        await Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (context) => const HomeScreen()),
-        );
-        debugPrint('Successfully navigated to HomeScreen');
-        debugPrint('Navigation completed');
-      } catch (e) {
-        debugPrint('Navigation error: $e');
-        // Show error to user
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: ${e.toString()}')),
-        );
+      // Close loading indicator and navigate to onboarding screen
+      if (mounted) {
+        Navigator.of(context).pop();
+        Navigator.of(context).pushReplacementNamed(AppRouter.onboarding);
       }
-    } else {
-      debugPrint('Form validation failed');
     }
   }
 

@@ -47,6 +47,9 @@ class _MapScreenState extends State<MapScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final screenHeight = MediaQuery.of(context).size.height;
+    
+    // TODO: Implement actual map functionality with google_maps_flutter
+    // For now, we'll show a placeholder
 
     return Scaffold(
       body: Stack(

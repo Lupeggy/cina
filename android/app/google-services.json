@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1042407728857",
+    "project_id": "movie-peggy-awesome",
+    "storage_bucket": "movie-peggy-awesome.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1042407728857:android:02cfde83f46a6d01b580c8",
+        "android_client_info": {
+          "package_name": "com.example.cina"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC91Cdk7FQLs2w6TJB5v5dxfgbU5k9GLFM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
