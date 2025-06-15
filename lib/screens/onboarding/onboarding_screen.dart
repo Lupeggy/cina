@@ -22,19 +22,19 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   int _currentPage = 0;
   final List<OnboardingPage> _pages = [
     OnboardingPage(
-      title: 'Find Your Perfect Home',
-      description: 'Discover the perfect place to live with our vast selection of rental properties.',
-      icon: Icons.home_outlined,
+      title: 'Explore Iconic Movie Locations',
+      description: 'Discover and visit the most famous filming locations from your favorite movies and TV shows around the world.',
+      icon: Icons.movie_outlined,
     ),
     OnboardingPage(
-      title: 'Save Your Favorites',
-      description: 'Save your favorite properties and get notified about price drops and availability.',
-      icon: Icons.favorite_border,
+      title: 'Create Your Movie Journey',
+      description: 'Save your favorite film locations and plan your ultimate movie-themed travel itinerary.',
+      icon: Icons.travel_explore,
     ),
     OnboardingPage(
-      title: 'Easy Application',
-      description: 'Apply for properties directly through the app with just a few taps.',
-      icon: Icons.description_outlined,
+      title: 'Immerse in Film History',
+    description: 'Learn behind-the-scenes stories and fun facts about how these locations were used in cinema.',
+    icon: Icons.theaters_outlined,
     ),
   ];
 
