@@ -8,6 +8,7 @@ import '../screens/trip/trip_screen.dart';
 import '../screens/map/map_screen.dart';
 import '../screens/onboarding/onboarding_screen.dart';
 import '../screens/onboarding/questions_screen.dart';
+import '../services/onboarding_service.dart';
 import '../screens/onboarding/location_screen.dart';
 import '../screens/onboarding/app_intro_screen.dart';
 import '../screens/profile/profile_screen.dart';
@@ -49,7 +50,15 @@ class AppRoutes {
       register: (context) => const RegisterScreen(),
       
       // Onboarding routes
-      onboarding: (context) => const OnboardingScreen(),
+      onboarding: (context) => OnboardingScreen(
+        onComplete: () async {
+          // Mark onboarding as complete and navigate to home
+          await OnboardingService.completeOnboarding();
+          if (context.mounted) {
+            Navigator.of(context).pushReplacementNamed(home);
+          }
+        },
+      ),
       questions: (context) => const QuestionsScreen(),
       location: (context) => const LocationScreen(),
       appIntro: (context) => const AppIntroScreen(),
@@ -68,7 +77,19 @@ class AppRoutes {
     switch (settings.name) {
       // Onboarding flow with slide transition
       case onboarding:
-        return SlideRightRoute(page: const OnboardingScreen());
+        return SlideRightRoute(
+          page: Builder(
+            builder: (context) => OnboardingScreen(
+              onComplete: () async {
+                // Mark onboarding as complete and navigate to home
+                await OnboardingService.completeOnboarding();
+                if (context.mounted) {
+                  Navigator.of(context).pushReplacementNamed(home);
+                }
+              },
+            ),
+          ),
+        );
       case questions:
         return SlideRightRoute(page: const QuestionsScreen());
       case location:

@@ -12,32 +12,47 @@ class QuestionsScreen extends StatefulWidget {
 
 class _QuestionsScreenState extends State<QuestionsScreen> {
   int _currentQuestionIndex = 0;
-  List<String>? _selectedGenres;
-  String? _selectedFrequency;
+  List<String>? _selectedFeatures;
+  String? _selectedOption;
 
   final List<Map<String, dynamic>> _questions = [
     {
-      'question': 'What movie genres do you like?',
-      'type': 'multi_select',
+      'question': 'What best describes your home search?',
+      'type': 'single_select',
+      'key': 'user_type',
       'options': [
-        'Action',
-        'Comedy',
-        'Drama',
-        'Horror',
-        'Sci-Fi',
-        'Romance',
-        'Thriller',
-        'Documentary',
+        'First-time home buyer',
+        'Looking to rent',
+        'Looking to buy',
+        'Investor',
+        'Just browsing',
       ],
     },
     {
-      'question': 'How often do you visit movie locations?',
-      'type': 'single_select',
+      'question': 'What are your must-have features?',
+      'type': 'multi_select',
+      'key': 'must_have_features',
       'options': [
-        'Frequently',
-        'Occasionally',
-        'Rarely',
-        'First time',
+        'Pet-friendly',
+        'Parking space',
+        'Balcony/Patio',
+        'In-unit laundry',
+        'Fully furnished',
+        'Swimming pool',
+        'Gym',
+        'Security',
+      ],
+    },
+    {
+      'question': 'When are you planning to move?',
+      'type': 'single_select',
+      'key': 'timeline',
+      'options': [
+        'Immediately',
+        'Within 1 month',
+        '1-3 months',
+        '3-6 months',
+        'Just exploring options',
       ],
     },
   ];
@@ -45,18 +60,43 @@ class _QuestionsScreenState extends State<QuestionsScreen> {
   @override
   void initState() {
     super.initState();
-    _selectedGenres = [];
+    _selectedFeatures = [];
   }
 
   Future<void> _savePreferences() async {
-    final preferences = {
-      'preferred_genres': _selectedGenres?.join(','),
-      'visit_frequency': _selectedFrequency ?? 'Not specified',
-    };
+    // Initialize an empty map to store all preferences
+    final Map<String, dynamic> preferences = {};
     
-    await OnboardingService.saveUserPreferences(preferences);
-    if (!mounted) return;
-    Navigator.pushReplacementNamed(context, AppRouter.login);
+    // Store the user type (from first question)
+    if (_questions.isNotEmpty) {
+      preferences['user_type'] = _selectedOption ?? 'Not specified';
+    }
+    
+    // Store must-have features (from second question)
+    if (_selectedFeatures != null && _selectedFeatures!.isNotEmpty) {
+      preferences['must_have_features'] = _selectedFeatures!.join(',');
+    } else {
+      preferences['must_have_features'] = 'None selected';
+    }
+    
+    // Store timeline (from third question)
+    if (_questions.length > 2) {
+      preferences['timeline'] = _selectedOption ?? 'No timeline specified';
+    }
+    
+    debugPrint('Saving preferences: $preferences');
+    
+    try {
+      await OnboardingService.saveUserPreferences(preferences);
+      if (mounted) {
+        Navigator.pushReplacementNamed(context, AppRouter.home);
+      }
+    } catch (e) {
+      debugPrint('Error saving preferences: $e');
+      if (mounted) {
+        Navigator.pushReplacementNamed(context, AppRouter.home);
+      }
+    }
   }
 
   void _handleOptionTap(dynamic option) {
@@ -64,15 +104,15 @@ class _QuestionsScreenState extends State<QuestionsScreen> {
     
     if (currentQuestion['type'] == 'multi_select') {
       setState(() {
-        if (_selectedGenres!.contains(option)) {
-          _selectedGenres!.remove(option);
+        if (_selectedFeatures!.contains(option)) {
+          _selectedFeatures!.remove(option);
         } else {
-          _selectedGenres!.add(option);
+          _selectedFeatures!.add(option);
         }
       });
     } else {
       setState(() {
-        _selectedFrequency = option;
+        _selectedOption = option;
       });
     }
   }
@@ -138,8 +178,8 @@ class _QuestionsScreenState extends State<QuestionsScreen> {
                 itemBuilder: (context, index) {
                   final option = currentQuestion['options'][index];
                   final isSelected = currentQuestion['type'] == 'multi_select'
-                      ? _selectedGenres!.contains(option)
-                      : _selectedFrequency == option;
+                      ? _selectedFeatures!.contains(option)
+                      : _selectedOption == option;
 
                   return AnimatedContainer(
                     duration: const Duration(milliseconds: 200),
@@ -220,27 +260,33 @@ class _QuestionsScreenState extends State<QuestionsScreen> {
               },
               child: SizedBox(
                 key: ValueKey<bool>((currentQuestion['type'] == 'multi_select'
-                        ? _selectedGenres!.isNotEmpty
-                        : _selectedFrequency != null)),
+                        ? _selectedFeatures!.isNotEmpty
+                        : _selectedOption != null)),
                 width: double.infinity,
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 300),
                   child: ElevatedButton(
-                    onPressed: (currentQuestion['type'] == 'multi_select'
-                                ? _selectedGenres!.isNotEmpty
-                                : _selectedFrequency != null)
-                            ? _nextQuestion
-                            : null,
+                    onPressed: () {
+                      if ((currentQuestion['type'] == 'multi_select' &&
+                              _selectedFeatures!.isNotEmpty) ||
+                          (currentQuestion['type'] == 'single_select' &&
+                              _selectedOption != null)) {
+                        _nextQuestion();
+                      }
+                    },
                     style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      backgroundColor: theme.primaryColor,
+                      minimumSize: const Size(double.infinity, 56),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
-                      elevation: 0,
                     ),
                     child: Text(
-                      isLastQuestion ? 'Continue' : 'Next',
-                      style: const TextStyle(fontSize: 16),
+                      isLastQuestion ? 'Let\'s Get Started' : 'Next',
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
                 ),

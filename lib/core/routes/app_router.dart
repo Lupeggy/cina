@@ -10,6 +10,7 @@ import 'package:cina/screens/trip/trip_screen.dart';
 import 'package:cina/screens/map/map_screen.dart';
 import 'package:cina/screens/onboarding/onboarding_screen.dart';
 import 'package:cina/screens/onboarding/questions_screen.dart';
+import 'package:cina/services/onboarding_service.dart';
 import 'package:cina/screens/onboarding/location_screen.dart';
 import 'package:cina/screens/onboarding/app_intro_screen.dart';
 
@@ -59,7 +60,17 @@ class AppRouter {
         
       // Onboarding routes
       case onboarding:
-        return MaterialPageRoute(builder: (_) => const OnboardingScreen());
+        return MaterialPageRoute(
+          builder: (context) => OnboardingScreen(
+            onComplete: () async {
+              // Mark onboarding as complete and navigate to register
+              await OnboardingService.completeOnboarding();
+              if (context.mounted) {
+                Navigator.of(context).pushReplacementNamed(register);
+              }
+            },
+          ),
+        );
       case questions:
         return MaterialPageRoute(builder: (_) => const QuestionsScreen());
       case location:

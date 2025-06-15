@@ -37,6 +37,11 @@ final List<Map<String, dynamic>> _movieScenes = [
     'distance': '2.5 km',
     'rating': 4.8,
     'year': 2008,
+    'description': 'The Dark Knight is a 2008 superhero film directed by Christopher Nolan. This scene was filmed in Chicago, showcasing the city\'s iconic architecture.',
+    'address': '200 N Wells St, Chicago, IL 60606, USA',
+    'duration': '2h 32m',
+    'director': 'Christopher Nolan',
+    'cast': ['Christian Bale', 'Heath Ledger', 'Aaron Eckhart', 'Michael Caine'],
   },
   {
     'title': 'Spider-Man: No Way Home',
@@ -46,6 +51,11 @@ final List<Map<String, dynamic>> _movieScenes = [
     'distance': '5.1 km',
     'rating': 4.7,
     'year': 2021,
+    'description': 'Spider-Man: No Way Home is a 2021 superhero film featuring Tom Holland as Spider-Man. This iconic New York location was used for several key scenes.',
+    'address': '42-10 27th St, Queens, NY 11101, USA',
+    'duration': '2h 28m',
+    'director': 'Jon Watts',
+    'cast': ['Tom Holland', 'Zendaya', 'Benedict Cumberbatch', 'Tobey Maguire'],
   },
   {
     'title': 'Inception',
@@ -55,6 +65,11 @@ final List<Map<String, dynamic>> _movieScenes = [
     'distance': '3.2 km',
     'rating': 4.6,
     'year': 2010,
+    'description': 'Inception is a 2010 science fiction film written and directed by Christopher Nolan. This Los Angeles location was used for the iconic dream sequences.',
+    'address': '633 W 5th St, Los Angeles, CA 90071, USA',
+    'duration': '2h 28m',
+    'director': 'Christopher Nolan',
+    'cast': ['Leonardo DiCaprio', 'Joseph Gordon-Levitt', 'Ellen Page', 'Tom Hardy'],
   },
   {
     'title': 'The Avengers',
@@ -64,6 +79,11 @@ final List<Map<String, dynamic>> _movieScenes = [
     'distance': '7.8 km',
     'rating': 4.5,
     'year': 2012,
+    'description': 'The Avengers is a 2012 superhero film based on the Marvel Comics superhero team of the same name. This Cleveland location was transformed into New York for the final battle scene.',
+    'address': '200 Public Square, Cleveland, OH 44114, USA',
+    'duration': '2h 23m',
+    'director': 'Joss Whedon',
+    'cast': ['Robert Downey Jr.', 'Chris Evans', 'Mark Ruffalo', 'Chris Hemsworth', 'Scarlett Johansson'],
   },
 ];
 
@@ -365,18 +385,38 @@ class _HomeScreenState extends State<HomeScreen> {
     return GestureDetector(
       onTap: () {
         try {
+          // Ensure all required fields are present with fallback values
+          final Map<String, dynamic> sceneData = {
+            'title': scene['title'] ?? 'Unknown Title',
+            'movie': scene['movie'] ?? scene['title'] ?? 'Unknown Movie',
+            'location': scene['location'] ?? 'Unknown Location',
+            'image': scene['image'] ?? 'https://via.placeholder.com/600x400',
+            'distance': scene['distance'] ?? 'N/A',
+            'rating': scene['rating']?.toDouble() ?? 0.0,
+            'year': scene['year']?.toString() ?? 'N/A',
+            'description': scene['description'] ?? 'No description available.',
+            'address': scene['address'] ?? 'Address not specified',
+            'duration': scene['duration'] ?? 'N/A',
+            'director': scene['director'] ?? 'Unknown Director',
+            'cast': scene['cast'] is List ? List<String>.from(scene['cast']) : <String>[],
+          };
+          
           // Navigate to the movie scene detail screen
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => MovieSceneDetailScreen(scene: scene),
-            ),
-          );
+          if (mounted) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => MovieSceneDetailScreen(scene: sceneData),
+              ),
+            );
+          }
         } catch (e) {
           debugPrint('Error navigating to movie scene detail: $e');
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Could not open scene details')),
-          );
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Could not open scene details')),
+            );
+          }
         }
       },
       child: Container(
