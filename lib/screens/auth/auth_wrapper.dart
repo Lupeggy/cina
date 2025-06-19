@@ -23,32 +23,36 @@ class _AuthWrapperState extends State<AuthWrapper> {
   }
 
   Future<void> _initializeApp() async {
-    // Reset onboarding for testing
-    await OnboardingService.resetOnboarding();
-    
     // Check onboarding status
     await _checkOnboardingStatus();
   }
 
   Future<void> _checkOnboardingStatus() async {
     try {
-      print('Checking onboarding status...');
+      print('🔍 Checking onboarding status...');
       final isComplete = await OnboardingService.isOnboardingComplete();
-      print('Onboarding status: $isComplete');
+      print('✅ Onboarding status: $isComplete');
       
-      if (!mounted) return;
+      if (!mounted) {
+        print('⚠️ Widget not mounted, not proceeding with navigation');
+        return;
+      }
+      
+      await Future.delayed(const Duration(milliseconds: 500)); // Small delay to ensure build is complete
       
       if (isComplete) {
-        print('Onboarding complete, navigating to register screen');
+        print('🚀 Onboarding complete, navigating to register screen');
         // If onboarding is complete, navigate to register screen
         _navigateToRegister();
       } else {
-        print('Showing onboarding screen');
+        print('📱 Showing onboarding screen');
         // Show onboarding screen
-        setState(() {
-          _showOnboarding = true;
-          _isLoading = false;
-        });
+        if (mounted) {
+          setState(() {
+            _showOnboarding = true;
+            _isLoading = false;
+          });
+        }
       }
     } catch (e) {
       if (mounted) {
@@ -86,10 +90,12 @@ class _AuthWrapperState extends State<AuthWrapper> {
   }
 
   void _navigateToRegister() {
-    if (mounted) {
-      // Use pushReplacement to remove the auth wrapper from the stack
-      Navigator.of(context).pushReplacementNamed(AppRouter.register);
-    }
+    // Use a post-frame callback to ensure the context is valid
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        Navigator.of(context).pushReplacementNamed(AppRouter.register);
+      }
+    });
   }
 
   @override

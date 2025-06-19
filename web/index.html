@@ -1,38 +1,172 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <!--
-    If you are serving your web app in a path other than the root, change the
-    href value below to reflect the base path you are serving from.
-
-    The path provided below has to start and end with a slash "/" in order for
-    it to work correctly.
-
-    For more details:
-    * https://developer.mozilla.org/en-US/docs/Web/HTML/Element/base
-
-    This is a placeholder for base href that will be replaced by the value of
-    the `--base-href` argument provided to `flutter build`.
-  -->
-  <base href="$FLUTTER_BASE_HREF">
-
+  <base href="/">
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
-  <meta name="description" content="A new Flutter project.">
-
-  <!-- iOS meta tags & icons -->
-  <meta name="mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black">
-  <meta name="apple-mobile-web-app-title" content="cina">
-  <link rel="apple-touch-icon" href="icons/Icon-192.png">
-
-  <!-- Favicon -->
-  <link rel="icon" type="image/png" href="favicon.png"/>
-
-  <title>cina</title>
-  <link rel="manifest" href="manifest.json">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>CINA</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      background-color: #f5f5f5;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+    }
+    #loading {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+      background: white;
+      z-index: 9999;
+      transition: opacity 0.3s ease;
+    }
+    .spinner {
+      width: 40px;
+      height: 40px;
+      border: 4px solid rgba(0, 0, 0, 0.1);
+      border-radius: 50%;
+      border-top-color: #3498db;
+      animation: spin 1s ease-in-out infinite;
+      margin-bottom: 16px;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    #status {
+      margin-top: 16px;
+      color: #666;
+      font-size: 14px;
+    }
+    #error {
+      display: none;
+      text-align: center;
+      padding: 20px;
+      max-width: 400px;
+      margin: 0 auto;
+    }
+    .error-title {
+      color: #e74c3c;
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 12px;
+    }
+    .error-message {
+      color: #7f8c8d;
+      margin-bottom: 16px;
+      line-height: 1.5;
+    }
+    .retry-button {
+      background: #3498db;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      padding: 10px 20px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .retry-button:hover {
+      background: #2980b9;
+    }
+  </style>
 </head>
 <body>
-  <script src="flutter_bootstrap.js" async></script>
+  <div id="loading">
+    <div class="spinner"></div>
+    <div id="status">Loading CINA...</div>
+  </div>
+
+  <div id="error">
+    <div class="error-title">Something went wrong</div>
+    <div class="error-message" id="error-message"></div>
+    <button class="retry-button" onclick="location.reload()">Try Again</button>
+  </div>
+
+  <script>
+    // Set environment variables
+    window.flutterEnv = window.flutterEnv || {
+      "SUPABASE_URL": "https://avrbmuawhyqtisxdtnhb.supabase.co",
+      "SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF2cmJtdWF3aHlxdGlzeGR0bmhiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTAwNTQ4OTksImV4cCI6MjA2NTYzMDg5OX0.s7r66k5-rsZyu9ZyU0_Jrj8JdhcBZsdp2XqVrTBRjec"
+    };
+
+    function updateStatus(message) {
+      const statusEl = document.getElementById('status');
+      if (statusEl) {
+        statusEl.textContent = message;
+      }
+    }
+
+    function showError(message) {
+      console.error('App Error:', message);
+      const loading = document.getElementById('loading');
+      const error = document.getElementById('error');
+      const errorMessage = document.getElementById('error-message');
+      
+      if (error && errorMessage) {
+        errorMessage.textContent = message;
+        error.style.display = 'block';
+      }
+      
+      if (loading) {
+        loading.style.opacity = '0';
+        setTimeout(() => {
+          loading.style.display = 'none';
+        }, 300);
+      }
+    }
+
+    // Load the Flutter app
+    function loadApp() {
+      updateStatus('Loading app...');
+      
+      const script = document.createElement('script');
+      script.src = 'main.dart.js';
+      script.type = 'application/javascript';
+      
+      script.onload = function() {
+        updateStatus('Initializing...');
+        // Hide loading screen after Flutter is ready
+        window.addEventListener('load', function() {
+          const loading = document.getElementById('loading');
+          if (loading) {
+            loading.style.opacity = '0';
+            setTimeout(() => {
+              loading.style.display = 'none';
+            }, 300);
+          }
+        }, { once: true });
+      };
+      
+      script.onerror = function() {
+        showError('Failed to load the application. Please check your internet connection and try again.');
+      };
+      
+      document.body.appendChild(script);
+    }
+
+    // Start loading the app when the page loads
+    document.addEventListener('DOMContentLoaded', function() {
+      try {
+        loadApp();
+      } catch (error) {
+        showError('Failed to initialize the application: ' + error.message);
+      }
+    });
+
+    // Global error handler
+    window.addEventListener('error', function(event) {
+      showError('An unexpected error occurred. Please try again.');
+      console.error('Global error:', event.error);
+    });
+  </script>
 </body>
 </html>

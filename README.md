@@ -14,10 +14,10 @@ Discover and explore famous movie scenes while you travel! Cina helps you find n
 ## Tech Stack
 
 - **Frontend**: Flutter (iOS & Android)
-- **Backend**: Firebase (Authentication, Firestore, Storage)
+- **Backend**: Supabase (Authentication, Database, Storage)
 - **Maps**: Google Maps API
 - **AI**: OpenAI API for recommendations
-- **State Management**: Provider/Bloc
+- **State Management**: Provider
 
 ## Getting Started
 
@@ -26,7 +26,7 @@ Discover and explore famous movie scenes while you travel! Cina helps you find n
 - Flutter SDK (latest stable version)
 - Dart SDK (latest stable version)
 - Android Studio / Xcode (for emulators)
-- Firebase project setup
+- Supabase project setup
 - Google Maps API key
 
 ### Installation

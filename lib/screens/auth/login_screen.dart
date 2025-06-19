@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:gotrue/gotrue.dart';
 import 'package:cina/core/theme/app_colors.dart';
 import 'package:cina/core/theme/app_typography.dart';
 import 'package:cina/core/theme/app_theme.dart';
 import 'package:cina/core/routes/app_router.dart';
+import 'package:cina/services/supabase_service.dart';
+import 'package:cina/config/supabase_config.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({Key? key}) : super(key: key);
@@ -32,16 +35,26 @@ class _LoginScreenState extends State<LoginScreen> {
     setState(() => _isLoading = true);
 
     try {
-      // Simulate network request
-      await Future.delayed(const Duration(seconds: 2));
+      // Sign in with email and password using Supabase
+      await SupabaseService().client.auth.signInWithPassword(
+        email: _emailController.text.trim(),
+        password: _passwordController.text,
+      );
       
       if (mounted) {
+        // Navigate to home on successful login
         Navigator.of(context).pushReplacementNamed(AppRouter.home);
+      }
+    } on AuthException catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Login failed: ${e.message}')),
+        );
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Login failed: ${e.toString()}')),
+          SnackBar(content: Text('An error occurred: $e')),
         );
       }
     } finally {
@@ -252,14 +265,16 @@ class _LoginScreenState extends State<LoginScreen> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     // Google Button
-                    _buildSocialButton(
-                      onPressed: () {},
-                      icon: SvgPicture.asset(
-                        'assets/icons/google.svg',
-                        width: 24,
-                        height: 24,
-                      ),
-                    ),
+                    _isLoading 
+                      ? const CircularProgressIndicator()
+                      : _buildSocialButton(
+                          onPressed: _signInWithGoogle,
+                          icon: SvgPicture.asset(
+                            'assets/icons/google.svg',
+                            width: 24,
+                            height: 24,
+                          ),
+                        ),
                     const SizedBox(width: AppTheme.spacingLg),
                     // Apple Button
                     _buildSocialButton(
@@ -318,7 +333,64 @@ class _LoginScreenState extends State<LoginScreen> {
       ),
     );
   }
-  
+
+  Future<void> _signInWithGoogle() async {
+    if (_isLoading) return; // Prevent multiple taps
+    
+    setState(() => _isLoading = true);
+    
+    try {
+      // Show loading indicator
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+      
+      // Sign in with Google
+      await SupabaseService().signInWithGoogle();
+      
+      // Close loading dialog
+      if (mounted) {
+        Navigator.of(context, rootNavigator: true).pop();
+        // Navigate to home screen
+        Navigator.of(context).pushReplacementNamed(AppRouter.home);
+      }
+    } on AuthException catch (e) {
+      if (mounted) {
+        // Close loading dialog if still open
+        Navigator.of(context, rootNavigator: true).pop();
+        
+        // Show error message
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Google sign in failed: ${e.message}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        // Close loading dialog if still open
+        Navigator.of(context, rootNavigator: true).pop();
+        
+        // Show generic error message
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('An error occurred: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
   Widget _buildSocialButton({
     required VoidCallback onPressed,
     required Widget icon,

@@ -28,6 +28,9 @@ android {
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+        
+        // OAuth redirect scheme for Supabase
+        manifestPlaceholders["appAuthRedirectScheme"] = "com.googleusercontent.apps.173190381746-apabqlfhvnem0q0jfaeum1tnp95p6a5e"
     }
 
     buildTypes {

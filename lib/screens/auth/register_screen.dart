@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:gotrue/gotrue.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:cina/services/supabase_service.dart';
 import 'package:cina/core/routes/app_router.dart';
 import 'package:cina/core/theme/app_theme.dart';
 import 'package:cina/core/theme/app_colors.dart';
@@ -25,6 +28,63 @@ class _RegisterScreenState extends State<RegisterScreen> {
     _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
+  }
+
+  Future<void> _signInWithGoogle() async {
+    if (_isLoading) return; // Prevent multiple taps
+    
+    setState(() => _isLoading = true);
+    
+    try {
+      // Show loading indicator
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+      
+      // Sign in with Google
+      await SupabaseService().signInWithGoogle();
+      
+      // Close loading dialog
+      if (mounted) {
+        Navigator.of(context, rootNavigator: true).pop();
+        // Navigate to home screen
+        Navigator.of(context).pushReplacementNamed(AppRouter.home);
+      }
+    } on AuthException catch (e) {
+      if (mounted) {
+        // Close loading dialog if still open
+        Navigator.of(context, rootNavigator: true).pop();
+        
+        // Show error message
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Google sign in failed: ${e.message}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        // Close loading dialog if still open
+        Navigator.of(context, rootNavigator: true).pop();
+        
+        // Show generic error message
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('An error occurred: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
   }
 
   Future<void> _submitForm() async {
@@ -262,14 +322,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     // Google Button
-                    _buildSocialButton(
-                      onPressed: () {},
-                      icon: SvgPicture.asset(
-                        'assets/icons/google.svg',
-                        width: 24,
-                        height: 24,
-                      ),
-                    ),
+                    _isLoading 
+                      ? const CircularProgressIndicator()
+                      : _buildSocialButton(
+                          onPressed: _signInWithGoogle,
+                          icon: SvgPicture.asset(
+                            'assets/icons/google.svg',
+                            width: 24,
+                            height: 24,
+                          ),
+                        ),
                     const SizedBox(width: AppTheme.spacingLg),
                     // Apple Button
                     _buildSocialButton(
