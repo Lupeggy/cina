@@ -31,6 +31,91 @@ class SupabaseService {
     ],
   );
 
+  // Facebook App ID from your Facebook Developer Console
+  static const String facebookAppId = '745414928143594';
+  
+  // Facebook Client Secret from your Facebook Developer Console
+  static const String facebookClientToken = '05f3116f266cb45b27504c66f2203067'; // This is your Facebook Client Secret
+
+  Future<AuthResponse> signInWithFacebook() async {
+    try {
+      print('Starting Facebook sign in...');
+      
+      // Get the current URL for redirect
+      final redirectUrl = kIsWeb 
+          ? 'http://localhost:3000/auth/callback'
+          : 'io.supabase.cinachat://login-callback';
+      
+      print('Using redirect URL: $redirectUrl');
+      
+      // For web, we'll use a different approach
+      if (kIsWeb) {
+        print('Web platform detected, using in-app web view');
+        final response = await _client.auth.signInWithOAuth(
+          OAuthProvider.facebook,
+          authScreenLaunchMode: LaunchMode.inAppWebView,
+          redirectTo: redirectUrl,
+          scopes: 'email,public_profile',
+        );
+        print('Web OAuth response: $response');
+        
+        // Wait for the session to be available
+        await Future.delayed(const Duration(seconds: 2));
+        return _getCurrentAuthResponse();
+      } else {
+        print('Mobile/Desktop platform detected, using external application');
+        final response = await _client.auth.signInWithOAuth(
+          OAuthProvider.facebook,
+          authScreenLaunchMode: LaunchMode.externalApplication,
+          redirectTo: redirectUrl,
+          scopes: 'email,public_profile',
+        );
+        print('Mobile OAuth response: $response');
+        
+        // Wait for the session to be available
+        await Future.delayed(const Duration(seconds: 2));
+        return _getCurrentAuthResponse();
+      }
+    } on AuthException catch (e) {
+      final error = 'Facebook AuthException: ${e.message}';
+      print(error);
+      rethrow;
+    } catch (e, stackTrace) {
+      print('Facebook Sign In Error: $e');
+      print('Stack trace: $stackTrace');
+      rethrow;
+    }
+  }
+  
+  Future<AuthResponse> _getCurrentAuthResponse() async {
+    print('Getting current auth response...');
+    
+    // Get the current session and user
+    final session = _client.auth.currentSession;
+    final user = _client.auth.currentUser;
+    
+    print('Current session: $session');
+    print('Current user: $user');
+    
+    if (session == null) {
+      final error = 'No active session found after OAuth flow';
+      print(error);
+      throw error;
+    }
+    
+    if (user == null) {
+      final error = 'No user found after OAuth flow';
+      print(error);
+      throw error;
+    }
+    
+    print('Successfully authenticated!');
+    return AuthResponse(
+      session: session,
+      user: user,
+    );
+  }
+
   Future<AuthResponse> signInWithGoogle() async {
     try {
       // First, try to get the current session

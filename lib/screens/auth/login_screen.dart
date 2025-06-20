@@ -270,31 +270,26 @@ class _LoginScreenState extends State<LoginScreen> {
                       : _buildSocialButton(
                           onPressed: _signInWithGoogle,
                           icon: SvgPicture.asset(
-                            'assets/icons/google.svg',
+                            'assets/images/google_logo.svg',
                             width: 24,
                             height: 24,
                           ),
                         ),
                     const SizedBox(width: AppTheme.spacingLg),
-                    // Apple Button
-                    _buildSocialButton(
-                      onPressed: () {},
-                      icon: SvgPicture.asset(
-                        'assets/icons/apple.svg',
-                        width: 24,
-                        height: 24,
-                      ),
-                    ),
-                    const SizedBox(width: AppTheme.spacingLg),
                     // Facebook Button
-                    _buildSocialButton(
-                      onPressed: () {},
-                      icon: SvgPicture.asset(
-                        'assets/icons/facebook.svg',
-                        width: 24,
-                        height: 24,
-                      ),
-                    ),
+                    _isLoading 
+                      ? const CircularProgressIndicator()
+                      : _buildSocialButton(
+                          onPressed: _signInWithFacebook,
+                          icon: Container(
+                            width: 36,
+                            height: 36,
+                            child: Image.asset(
+                              'assets/images/Facebook.png',
+                              fit: BoxFit.contain,
+                            ),
+                          ),
+                        ),
                   ],
                 ),
                 
@@ -367,6 +362,63 @@ class _LoginScreenState extends State<LoginScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Google sign in failed: ${e.message}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        // Close loading dialog if still open
+        Navigator.of(context, rootNavigator: true).pop();
+        
+        // Show generic error message
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('An error occurred: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+  
+  Future<void> _signInWithFacebook() async {
+    if (_isLoading) return; // Prevent multiple taps
+    
+    setState(() => _isLoading = true);
+    
+    try {
+      // Show loading indicator
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+      
+      // Sign in with Facebook
+      await SupabaseService().signInWithFacebook();
+      
+      // Close loading dialog
+      if (mounted) {
+        Navigator.of(context, rootNavigator: true).pop();
+        // Navigate to home screen
+        Navigator.of(context).pushReplacementNamed(AppRouter.home);
+      }
+    } on AuthException catch (e) {
+      if (mounted) {
+        // Close loading dialog if still open
+        Navigator.of(context, rootNavigator: true).pop();
+        
+        // Show error message
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Facebook sign in failed: ${e.message}'),
             backgroundColor: Colors.red,
           ),
         );
